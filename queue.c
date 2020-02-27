@@ -191,62 +191,72 @@ void q_reverse(queue_t *q)
     q->head->next = prevEle;
 }
 
-list_ele_t *merge(list_ele_t *l1, list_ele_t *l2)
-{
-    list_ele_t *tmp = malloc(sizeof(list_ele_t));
-    if (tmp == NULL) {
-        printf("ERROR::merge()::Allocate memory to tmp failed.\n");
-    }
-    list_ele_t *q = tmp;
-
-    while (l1 && l2) {
-        if (strnatcmp(l1->value, l2->value)) {
-            tmp->next = l2;
-            tmp = tmp->next;
-            l2 = l2->next;
-        } else {
-            tmp->next = l1;
-            tmp = tmp->next;
-            l1 = l1->next;
-        }
-    }
-    if (l1)
-        tmp->next = l1;
-    if (l2)
-        tmp->next = l2;
-    list_ele_t *head = q->next;
-    free(q);
-    return head;
-}
-
-list_ele_t *mergeSortList(list_ele_t *head)
-{
-    if (!head || !head->next)
-        return head;
-    list_ele_t *slow = head;
-    list_ele_t *fast = head->next;
-
-    while (fast && fast->next) {
-        slow = slow->next;
-        fast = fast->next->next;
-    }
-    fast = slow->next;
-    slow->next = NULL;
-
-    list_ele_t *l1 = mergeSortList(head);
-    list_ele_t *l2 = mergeSortList(fast);
-
-    return merge(l1, l2);
-}
-
 /*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
+
+int min(int x, int y)
+{
+    return x < y ? x : y;
+}
+
 void q_sort(queue_t *q)
 {
-    if (q == NULL || q->head == NULL || q->head->next == NULL)
+    if (q == NULL)
         return;
-    q->head = mergeSortList(q->head);
+
+    int length = q->size;
+    for (int width = 1; width < length; width *= 2) {
+        list_ele_t tmp_head;
+        list_ele_t *tmp = &tmp_head;
+        list_ele_t *l_node = q->head;
+        list_ele_t *r_node = q->head;
+        for (int start = 0; start < length; start += width * 2) {
+            int mid = min(start + width, length),
+                end = min(start + width * 2, length);
+            int ls = start;
+            int le = mid;
+            int rs = mid;
+            int re = end;
+            for (int i = 0; i < width; i++) {
+                if (r_node->next)
+                    r_node = r_node->next;
+                else
+                    break;
+            }
+            while (ls < le && rs < re) {
+                if (strnatcmp(l_node->value, r_node->value) < 0) {
+                    tmp->next = l_node;
+                    tmp = tmp->next;
+                    l_node = l_node->next;
+                    tmp->next = NULL;
+                    ls += 1;
+                } else {
+                    tmp->next = r_node;
+                    tmp = tmp->next;
+                    r_node = r_node->next;
+                    tmp->next = NULL;
+                    rs += 1;
+                }
+            }
+            while (ls < le) {
+                tmp->next = l_node;
+                tmp = tmp->next;
+                l_node = l_node->next;
+                tmp->next = NULL;
+                ls += 1;
+            }
+            while (rs < re) {
+                tmp->next = r_node;
+                tmp = tmp->next;
+                r_node = r_node->next;
+                tmp->next = NULL;
+                rs += 1;
+            }
+            l_node = r_node;
+        }
+        q->head = tmp_head.next;
+    }
 }
